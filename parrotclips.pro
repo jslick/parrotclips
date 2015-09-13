@@ -1,4 +1,8 @@
 TEMPLATE = subdirs
+
+CONFIG += ordered
 SUBDIRS = \
-    #contrib/UGlobalHotkey \
-    src/app.pro 
+    ext/UGlobalHotkey/uglobalhotkey.pro \
+    src/app.pro
+
+app.depends = uglobalhotkey

@@ -23,6 +23,8 @@ public:
 
     bool escapeRequested() override;
 
+    void windowShown() override;
+
 signals:
 
 private slots:

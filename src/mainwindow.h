@@ -22,6 +22,8 @@ protected:
 private slots:
     void positionWindow();
 
+    void bringToFront();
+
     void fetchClip();
 
     void maybeHide();

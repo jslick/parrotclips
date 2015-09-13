@@ -15,6 +15,8 @@
 #include <QMessageBox>
 #include <QDebug>
 
+#include <UGlobalHotkey/uglobalhotkeys.h>
+
 #define APP_NAME "Parrot Clips"
 
 static
@@ -41,6 +43,18 @@ MainWindow::MainWindow(QWidget* parent)
 
     this->setWindowTitle(APP_NAME);
     this->setWindowIcon(QIcon(":/icons/app.png"));
+
+    UGlobalHotkeys* hotkeyManager = new UGlobalHotkeys(this);
+    try
+    {
+        hotkeyManager->registerHotkey("Alt+Shift+C");
+
+        connect(hotkeyManager, SIGNAL(activated(size_t)), SLOT(bringToFront()));
+    }
+    catch (UException& e)
+    {
+        qDebug() << "Unable to register hotkey: " << e.what();
+    }
 
     try
     {
@@ -104,6 +118,15 @@ void MainWindow::positionWindow()
     this->setGeometry(avail.width() - w - OS_DIFF.x, avail.height() - h - OS_DIFF.y, w, h);
 }
 
+void MainWindow::bringToFront()
+{
+    this->show();
+    this->raise();
+    this->activateWindow();
+
+    this->view->windowShown();
+}
+
 void MainWindow::fetchClip()
 {
     QClipboard* clipboard = QApplication::clipboard();
@@ -119,5 +142,5 @@ void MainWindow::fetchClip()
 void MainWindow::maybeHide()
 {
     if (this->view->escapeRequested())
-        ; //this->hide();   // TODO
+        this->hide();
 }

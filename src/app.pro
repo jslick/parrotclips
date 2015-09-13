@@ -33,12 +33,27 @@ HEADERS += \
     clipswidget.h \
     clipstable.h
 
+INCLUDEPATH += ../ext/
 INCLUDEPATH += ../ext/sqlite3/
 
 !win32:  LIBS += -ldl
+win32-msvc* {
+    CONFIG(debug, debug|release) {
+        LIBS += -L$$OUT_PWD/../ext/UGlobalHotkey/debug/ -lUGlobalHotkey
+    }
+    else {
+        LIBS += -L$$OUT_PWD/../ext/UGlobalHotkey/release/ -lUGlobalHotkey
+    }
+}
+else {
+    LIBS += -L$$OUT_PWD/../ext/UGlobalHotkey/
+}
+LIBS += -lUGlobalHotkey
 
 RESOURCES += \
     app.qrc \
     sql.qrc
 
 win32:  RC_FILE = app.rc
+
+g++: PRE_TARGETDEPS += $$OUT_PWD/../uglobalhotkey/libUGlobalHotkey.so

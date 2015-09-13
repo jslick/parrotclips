@@ -134,6 +134,11 @@ bool ClipsWidget::escapeRequested()
     }
 }
 
+void ClipsWidget::windowShown()
+{
+    this->searchEdit->selectAll();
+}
+
 void ClipsWidget::pushMru(QSharedPointer<Clip> clip)
 {
     this->mruTable->insertRow(0);

@@ -13,6 +13,8 @@ public:
     virtual ~View() {}
 
     virtual bool escapeRequested() { return true; }
+
+    virtual void windowShown() {}
 };
 
 #endif // VIEW_H
