@@ -3,6 +3,7 @@
 #include "clipboardmanager.h"
 #include "clipstable.h"
 
+#include <QAction>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QSplitter>
@@ -10,27 +11,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QTableWidget>
-#include <QMenu>
 #include <QInputDialog>
 #include <QMessageBox>
-
-enum ContextMenuAction : int
-{
-    ActivateAction = 1,
-    SaveAction = 2,
-    RemoveAction = 3,
-};
-
-class ClipItem : public QTableWidgetItem
-{
-public:
-    ClipItem(QSharedPointer<Clip>& clip)
-        : QTableWidgetItem(clip->getPreview(), Cols::TextPreviewCol),
-          clip(clip)
-    {}
-
-    QSharedPointer<Clip> clip;
-};
 
 ClipsWidget::ClipsWidget(ClipboardManager& clipboardManager, QWidget* parent) :
     View(parent),
@@ -40,18 +22,10 @@ ClipsWidget::ClipsWidget(ClipboardManager& clipboardManager, QWidget* parent) :
     stacked(new QStackedLayout),
     mruTable(new ClipsTable(this)),
     savedTable(new ClipsTable(this)),
+    saveAction(new QAction(tr("&Save as..."), this)),
+    removeAction(new QAction(tr("&Remove"), this)),
     resultsTable(new ClipsTable(this))
 {
-    // Actions
-    QAction* activateAction = new QAction(tr("Make &active clip"), this);
-    activateAction->setData(QVariant(ContextMenuAction::ActivateAction));
-
-    QAction* saveAction = new QAction(tr("&Save as..."), this);
-    saveAction->setData(QVariant(ContextMenuAction::SaveAction));
-
-    QAction* removeAction = new QAction(tr("&Remove"), this);
-    removeAction->setData(QVariant(ContextMenuAction::RemoveAction));
-
     // Layout
     this->setLayout(this->mainLayout);
 
@@ -87,27 +61,18 @@ ClipsWidget::ClipsWidget(ClipboardManager& clipboardManager, QWidget* parent) :
 
     this->mainLayout->addLayout(this->stacked);
 
-    // Context menus
-    this->mruMenu = new QMenu(this);
-    this->mruMenu->addAction(activateAction);
-    this->mruMenu->addAction(saveAction);
-    this->mruMenu->addAction(removeAction);
-    this->assignTableMenu(this->mruTable, this->mruMenu);
-
-    this->savedMenu = new QMenu(this);
-    this->savedMenu->addAction(activateAction);
-    this->savedMenu->addAction(removeAction);
-    this->assignTableMenu(this->savedTable, this->savedMenu);
-
-    this->resultsMenu = new QMenu(this);
-    this->resultsMenu->addAction(activateAction);
-    this->assignTableMenu(this->resultsTable, this->resultsMenu);
+    // Context menu actions
+    this->mruTable->addContextMenuAction(this->saveAction);
+    this->mruTable->addContextMenuAction(this->removeAction);
+    this->savedTable->addContextMenuAction(this->removeAction);
+    connect(this->mruTable, &ClipsTable::contextActionTriggered, this, &ClipsWidget::handleContextMenuAction);
+    connect(this->savedTable, &ClipsTable::contextActionTriggered, this, &ClipsWidget::handleContextMenuAction);
 
     // Data binding
     connect(&this->clipboardManager, &ClipboardManager::mruPushed, this, &ClipsWidget::pushMru);
     connect(&this->clipboardManager, &ClipboardManager::mruRemoved, [this](QSharedPointer<Clip> clip)
     {
-        this->removeClipFromTable(this->mruTable, clip);
+        this->mruTable->removeClipFromTable(clip);
     });
     connect(&this->clipboardManager, &ClipboardManager::clipInserted, [this](ClipsGroup*,int,QSharedPointer<Clip> clip)
     {
@@ -115,7 +80,7 @@ ClipsWidget::ClipsWidget(ClipboardManager& clipboardManager, QWidget* parent) :
     });
     connect(&this->clipboardManager, &ClipboardManager::clipRemoved, [this](ClipsGroup*,QSharedPointer<Clip> clip)
     {
-        this->removeClipFromTable(this->savedTable, clip);
+        this->savedTable->removeClipFromTable(clip);
     });
 
     connect(this->searchEdit, &QLineEdit::textChanged, this, &ClipsWidget::updateResults);
@@ -199,141 +164,59 @@ void ClipsWidget::updateResults(const QString& text)
     }
 }
 
-void ClipsWidget::assignTableMenu(ClipsTable* table, QMenu* menu)
-{
-    table->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(table, &QTableWidget::customContextMenuRequested, [this,table,menu](QPoint pos)
-    {
-        if (menu)
-        {
-            this->contextMenuPoint = pos;
-            this->currentContextTable = table;
-            menu->popup(table->viewport()->mapToGlobal(pos));
-        }
-    });
-    connect(menu, &QMenu::triggered, [this,table](QAction* action)
-    {
-        if (this->currentContextTable == table)
-            this->handleContextMenuAction(action);
-    });
-}
-
 void ClipsWidget::handleContextMenuAction(QAction* action)
 {
-    if (!this->currentContextTable)
+    ClipsTable* table = dynamic_cast<ClipsTable*>(QObject::sender());
+    Q_ASSERT(table);
+    if (!table)
         return;
 
-    // TODO:  Use click point instead
+    if (action == this->saveAction)
+        this->saveClip(table);
+    else if (action == this->removeAction)
+        this->removeClips(table);
+}
 
-    switch (action->data().value<int>())
+void ClipsWidget::saveClip(ClipsTable* table)
+{
+    bool ok = false;
+    QString name = QInputDialog::getText(this,
+                                         tr("Save As"), tr("Name"),
+                                         QLineEdit::Normal, QString(), &ok);
+    if (ok)
     {
-    case ActivateAction:
-    {
-        searchSelectedItems(this->currentContextTable, [](ClipItem* clipItem)
+        table->searchSelectedClips([this,&name](QSharedPointer<Clip> clip)
         {
-            Clip* clip = clipItem->clip.data();
-            clip->setClipboard();
+            clip->setName(name);
+            this->clipboardManager.getRootGroup().addClip(clip);
             return false;
         });
-
-        break;
     }
+}
 
-    case SaveAction:
+void ClipsWidget::removeClips(ClipsTable* table)
+{
+    int rv = QMessageBox::question(this,
+                          tr("Remove Confirmation"),
+                          tr("Are you should you want to remove the selected clip(s)?")
+                          );
+    if (rv == QMessageBox::Yes)
     {
-        bool ok = false;
-        QString name = QInputDialog::getText(this,
-                                             tr("Save As"), tr("Name"),
-                                             QLineEdit::Normal, QString(), &ok);
-        if (ok)
+        if (table == this->mruTable)
         {
-            searchSelectedClips(this->currentContextTable, [this,&name](QSharedPointer<Clip> clip)
+            table->searchSelectedClips([this](QSharedPointer<Clip> clip)
             {
-                clip->setName(name);
-                this->clipboardManager.getRootGroup().addClip(clip);
-                return false;
+                this->clipboardManager.removeMruClip(clip);
+                return true;
             });
         }
-        break;
-    }
-
-    case RemoveAction:
-    {
-        int rv = QMessageBox::question(this,
-                              tr("Remove Confirmation"),
-                              tr("Are you should you want to remove the selected clip(s)?")
-                              );
-        if (rv == QMessageBox::Yes)
-        {
-            if (this->currentContextTable == this->mruTable)
-            {
-                searchSelectedClips(this->mruTable, [this](QSharedPointer<Clip> clip)
-                {
-                    this->clipboardManager.removeMruClip(clip);
-                    return true;
-                });
-            }
-            else
-            {
-                searchSelectedClips(this->savedTable, [this](QSharedPointer<Clip> clip)
-                {
-                    this->clipboardManager.getRootGroup().removeClip(clip);
-                    return true;
-                });
-            }
-        }
-
-        break;
-    }
-    }
-}
-
-void ClipsWidget::searchTableItems(ClipsTable* table, std::function<bool(ClipItem*)> handler)
-{
-    for (int row = 0; row < table->rowCount(); row++)
-    {
-        QTableWidgetItem* item = table->item(row, Cols::TextPreviewCol);
-        Q_ASSERT(item->type() == Cols::TextPreviewCol);
-        ClipItem* clipItem = static_cast<ClipItem*>(item);
-        bool kontinue = handler(clipItem);
-        if (!kontinue)
-            break;
-    }
-}
-
-void ClipsWidget::searchSelectedItems(ClipsTable* table, std::function<bool(ClipItem*)> handler)
-{
-    QList<QTableWidgetItem*> items = table->selectedItems();
-    for (QTableWidgetItem* item : items)
-    {
-        if (item->type() == Cols::TextPreviewCol)
-        {
-            ClipItem* clipItem = static_cast<ClipItem*>(item);
-            bool kontinue = handler(clipItem);
-            if (!kontinue)
-                break;
-        }
-    }
-}
-
-void ClipsWidget::searchSelectedClips(ClipsTable* table, std::function<bool(QSharedPointer<Clip>)> handler)
-{
-    return searchSelectedItems(table, [&handler](ClipItem* clipItem)
-    {
-        return handler(clipItem->clip);
-    });
-}
-
-void ClipsWidget::removeClipFromTable(ClipsTable* table, QSharedPointer<Clip> clip)
-{
-    searchTableItems(table, [table,clip](ClipItem* clipItem)
-    {
-        if (clip == clipItem->clip)
-        {
-            table->removeRow(table->row(clipItem));
-            return false;
-        }
         else
-            return true;
-    });
+        {
+            table->searchSelectedClips([this](QSharedPointer<Clip> clip)
+            {
+                this->clipboardManager.getRootGroup().removeClip(clip);
+                return true;
+            });
+        }
+    }
 }

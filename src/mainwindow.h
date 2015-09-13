@@ -7,6 +7,7 @@
 class ClipboardManager;
 class ClipsStorage;
 class View;
+class SwitcherDialog;
 
 class MainWindow final : public QMainWindow
 {
@@ -17,12 +18,16 @@ public:
     ~MainWindow();
 
 protected:
-    void showEvent(QShowEvent* event);
+    void showEvent(QShowEvent* event) override;
+
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void positionWindow();
 
     void bringToFront();
+
+    void showSwitcher();
 
     void fetchClip();
 
@@ -33,6 +38,7 @@ private:
     ClipboardManager* clipboardManager = 0;
     View* view = 0;
     bool shown = false;
+    QScopedPointer<SwitcherDialog> switcherDialog;
 };
 
 #endif // MAINWINDOW_H

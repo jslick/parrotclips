@@ -3,6 +3,8 @@
 #include "clip.h"
 #include "clipboardmanager.h"
 #include "clipsstorage.h"
+#include "switcherdialog.h"
+#include "mruswitcher.h"
 
 #include <QApplication>
 #include <QAction>
@@ -37,7 +39,6 @@ MainWindow::MainWindow(QWidget* parent)
     {
         Qt::WindowFlags flags = this->windowFlags();
         flags &= ~Qt::WindowMaximizeButtonHint;
-//        flags |= Qt::WindowStaysOnTopHint;
         this->setWindowFlags(flags);
     }
 
@@ -47,9 +48,15 @@ MainWindow::MainWindow(QWidget* parent)
     UGlobalHotkeys* hotkeyManager = new UGlobalHotkeys(this);
     try
     {
-        hotkeyManager->registerHotkey("Alt+Shift+C");
-
-        connect(hotkeyManager, SIGNAL(activated(size_t)), SLOT(bringToFront()));
+        hotkeyManager->registerHotkey("Alt+Shift+C", 1);
+        hotkeyManager->registerHotkey("Alt+Ctrl+Shift+C", 2);
+        connect(hotkeyManager, &UGlobalHotkeys::activated, [this](size_t id)
+        {
+            if (id == 1)
+                this->bringToFront();
+            else if (id == 2)
+                this->showSwitcher();
+        });
     }
     catch (UException& e)
     {
@@ -99,6 +106,14 @@ void MainWindow::showEvent(QShowEvent* event)
     this->shown = true;
 }
 
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    if (this->switcherDialog)
+        this->switcherDialog->close();
+
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::positionWindow()
 {
     const QRect avail = QApplication::desktop()->availableGeometry(this);
@@ -125,6 +140,25 @@ void MainWindow::bringToFront()
     this->activateWindow();
 
     this->view->windowShown();
+}
+
+void MainWindow::showSwitcher()
+{
+    if (!switcherDialog)
+        switcherDialog.reset(new SwitcherDialog());
+
+    if (this->switcherDialog->isVisible())
+    {
+        this->switcherDialog->selectNext();
+    }
+    else
+    {
+        this->switcherDialog->setSwitcher(QSharedPointer<Switcher>(new MruSwitcher(*this->clipboardManager)));
+
+        this->switcherDialog->show();
+        this->switcherDialog->raise();
+        this->switcherDialog->activateWindow();
+    }
 }
 
 void MainWindow::fetchClip()

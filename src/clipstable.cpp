@@ -1,6 +1,17 @@
 #include "clipstable.h"
+#include "clip.h"
 
 #include <QHeaderView>
+#include <QMenu>
+#include <QKeyEvent>
+
+ClipItem::ClipItem(QSharedPointer<Clip>& clip)
+        : QTableWidgetItem(clip->getPreview(), Cols::TextPreviewCol),
+          clip(clip)
+{}
+
+
+ClipsTable* ClipsTable::currentContextTable = nullptr;
 
 ClipsTable::ClipsTable(QWidget* parent) :
     QTableWidget(parent)
@@ -20,6 +31,18 @@ ClipsTable::ClipsTable(QWidget* parent) :
     tableFont.setPointSize(tableFont.pointSize() * 0.9);
     this->setFont(tableFont);
 #endif
+
+    // Actions
+    QAction* activateAction = new QAction(tr("Make &active clip"), this);
+    activateAction->setData(QVariant(TableMenuAction::ActivateAction));
+
+    // Context menus
+    this->menu = new QMenu(this);
+    this->menu->addAction(activateAction);
+    this->menu->setDefaultAction(activateAction);
+    this->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, &QTableWidget::customContextMenuRequested, this, &ClipsTable::showContextMenu);
+    connect(this->menu, &QMenu::triggered, this, &ClipsTable::handleContextMenuAction);
 }
 
 void ClipsTable::resizeEvent(QResizeEvent* event)
@@ -27,4 +50,102 @@ void ClipsTable::resizeEvent(QResizeEvent* event)
     QTableWidget::resizeEvent(event);
 
     this->setColumnWidth(Cols::NameCol, this->width() * 0.3);
+}
+
+void ClipsTable::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Return)
+    {
+        this->searchSelectedItems([this](ClipItem* clipItem)
+        {
+            int y = this->rowViewportPosition(this->row(clipItem));
+            this->showContextMenu(QPoint(this->width(), y + 12));
+            this->menu->setActiveAction(this->menu->defaultAction());
+            return false;
+        });
+    }
+
+    return QTableWidget::keyPressEvent(event);
+}
+
+void ClipsTable::addContextMenuAction(QAction* action)
+{
+    this->menu->addAction(action);
+}
+
+void ClipsTable::searchTableItems(std::function<bool(ClipItem*)> handler) const
+{
+    for (int row = 0; row < this->rowCount(); row++)
+    {
+        QTableWidgetItem* item = this->item(row, Cols::TextPreviewCol);
+        Q_ASSERT(item->type() == Cols::TextPreviewCol);
+        ClipItem* clipItem = static_cast<ClipItem*>(item);
+        bool kontinue = handler(clipItem);
+        if (!kontinue)
+            break;
+    }
+}
+
+void ClipsTable::searchSelectedItems(std::function<bool(ClipItem*)> handler) const
+{
+    QList<QTableWidgetItem*> items = this->selectedItems();
+    for (QTableWidgetItem* item : items)
+    {
+        if (item->type() == Cols::TextPreviewCol)
+        {
+            ClipItem* clipItem = static_cast<ClipItem*>(item);
+            bool kontinue = handler(clipItem);
+            if (!kontinue)
+                break;
+        }
+    }
+}
+
+void ClipsTable::searchSelectedClips(std::function<bool(QSharedPointer<Clip>)> handler) const
+{
+    return this->searchSelectedItems([&handler](ClipItem* clipItem)
+    {
+        return handler(clipItem->clip);
+    });
+}
+
+void ClipsTable::removeClipFromTable(QSharedPointer<Clip> clip)
+{
+    this->searchTableItems([this,clip](ClipItem* clipItem)
+    {
+        if (clip == clipItem->clip)
+        {
+            this->removeRow(this->row(clipItem));
+            return false;
+        }
+        else
+            return true;
+    });
+}
+
+void ClipsTable::showContextMenu(const QPoint& pos)
+{
+    currentContextTable = this;
+    this->menu->popup(this->viewport()->mapToGlobal(pos));
+}
+
+void ClipsTable::handleContextMenuAction(QAction* action)
+{
+    if (currentContextTable != this)
+        return;
+
+    switch (action->data().value<int>())
+    {
+    case ActivateAction:
+        searchSelectedItems([](ClipItem* clipItem)
+        {
+            Clip* clip = clipItem->clip.data();
+            clip->setClipboard();
+            return false;
+        });
+
+        break;
+    }
+
+    emit contextActionTriggered(action);
 }

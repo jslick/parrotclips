@@ -29,6 +29,11 @@ ClipsGroup& ClipboardManager::getRootGroup()
     return this->rootGroup;
 }
 
+const QQueue<QSharedPointer<Clip>>& ClipboardManager::getMruClips() const
+{
+    return this->mruClips;
+}
+
 QList<QSharedPointer<Clip>> ClipboardManager::searchClips(const QString& text) const
 {
     return this->storage.searchClips(text, const_cast<ClipboardManager&>(*this));

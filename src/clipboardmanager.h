@@ -20,6 +20,8 @@ public:
 
     ClipsGroup& getRootGroup();
 
+    const QQueue<QSharedPointer<Clip>>& getMruClips() const;
+
     QList<QSharedPointer<Clip>> searchClips(const QString& text) const;
 
 signals:

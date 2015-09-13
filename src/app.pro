@@ -19,20 +19,26 @@ SOURCES += \
     clipsstorage.cpp \
     clipsgroup.cpp \
     clipswidget.cpp \
-    clipstable.cpp
+    clipstable.cpp \
+    switcherdialog.cpp \
+    mruswitcher.cpp
 
 SOURCES += ../ext/sqlite3/sqlite3.c
 
 HEADERS += \
+    ../include/parrotclips/view.h \
+    ../include/parrotclips/switcher.h \
     mainwindow.h \
     clip.h \
     clipboardmanager.h \
     clipsstorage.h \
     clipsgroup.h \
-    view.h \
     clipswidget.h \
-    clipstable.h
+    clipstable.h \
+    switcherdialog.h \
+    mruswitcher.h
 
+INCLUDEPATH += ../include/
 INCLUDEPATH += ../ext/
 INCLUDEPATH += ../ext/sqlite3/
 
