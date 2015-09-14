@@ -52,6 +52,9 @@ public slots:
 protected slots:
     void handleContextMenuAction(QAction* action);
 
+protected:
+    void focusInEvent(QFocusEvent*);
+
 private:
     static ClipsTable* currentContextTable;
 

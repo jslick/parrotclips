@@ -41,7 +41,7 @@ ClipsWidget::ClipsWidget(ClipboardManager& clipboardManager, QWidget* parent) :
     QVBoxLayout* savedLayout = new QVBoxLayout;
     savedLayout->setContentsMargins(0, 0, 0, 0);
     savedContainer->setLayout(savedLayout);
-    QLabel* savedLabel = new QLabel(tr("Saved clips:"), this);
+    QLabel* savedLabel = new QLabel(tr("Sa&ved clips:"), this);
     savedLabel->setBuddy(this->savedTable);
     savedLayout->addWidget(savedLabel);
     savedLayout->addWidget(this->savedTable);

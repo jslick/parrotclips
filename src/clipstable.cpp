@@ -149,3 +149,9 @@ void ClipsTable::handleContextMenuAction(QAction* action)
 
     emit contextActionTriggered(action);
 }
+
+void ClipsTable::focusInEvent(QFocusEvent*)
+{
+    if (this->selectedIndexes().length() == 0 && this->rowCount())
+        this->selectRow(0);
+}
