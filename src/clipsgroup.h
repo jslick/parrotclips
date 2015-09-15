@@ -25,7 +25,7 @@ public slots:
     void loadClips();
 
 private:
-    int64_t groupId;
+    int64_t groupId = -1;
     ClipboardManager& clipboardManager;
 
     QList<QSharedPointer<Clip>> clips;

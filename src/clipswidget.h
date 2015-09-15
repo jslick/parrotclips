@@ -24,7 +24,6 @@ signals:
 
 private slots:
     void pushMru(QSharedPointer<Clip> clip);
-    void addSavedClip(QSharedPointer<Clip> clip);
     void updateResults(const QString& text);
     void handleContextMenuAction(QAction* action);
 

@@ -76,7 +76,7 @@ ClipsWidget::ClipsWidget(ClipboardManager& clipboardManager, QWidget* parent) :
     });
     connect(&this->clipboardManager, &ClipboardManager::clipInserted, [this](ClipsGroup*,int,QSharedPointer<Clip> clip)
     {
-        this->addSavedClip(clip);
+        this->savedTable->prependClip(clip);
     });
     connect(&this->clipboardManager, &ClipboardManager::clipRemoved, [this](ClipsGroup*,QSharedPointer<Clip> clip)
     {
@@ -106,13 +106,10 @@ void ClipsWidget::windowShown()
 
 void ClipsWidget::pushMru(QSharedPointer<Clip> clip)
 {
-    this->mruTable->insertRow(0);
-    this->mruTable->setItem(0, Cols::TextPreviewCol, new ClipItem(clip));
-    this->mruTable->resizeRowToContents(0);
+    this->mruTable->prependClip(clip);
 
     for (int i = 0; i < this->mruTable->rowCount(); i++)
     {
-
         if (i < 10)
         {
             int num = i == 9 ? 0 : i+1;
@@ -129,15 +126,6 @@ void ClipsWidget::pushMru(QSharedPointer<Clip> clip)
     }
 }
 
-void ClipsWidget::addSavedClip(QSharedPointer<Clip> clip)
-{
-    this->savedTable->insertRow(0);
-
-    this->savedTable->setItem(0, Cols::NameCol, new QTableWidgetItem(clip->name));
-    this->savedTable->setItem(0, Cols::TextPreviewCol, new ClipItem(clip));
-    this->savedTable->resizeRowToContents(0);
-}
-
 void ClipsWidget::updateResults(const QString& text)
 {
     // TODO:  Debounce
@@ -152,11 +140,7 @@ void ClipsWidget::updateResults(const QString& text)
         QList<QSharedPointer<Clip>> results = this->clipboardManager.searchClips(text);
         for (auto& clip : results)
         {
-            int rownum = this->resultsTable->rowCount();
-            this->resultsTable->insertRow(rownum);
-
-            this->resultsTable->setItem(rownum, Cols::NameCol, new QTableWidgetItem(clip->name));
-            this->resultsTable->setItem(rownum, Cols::TextPreviewCol, new ClipItem(clip));
+            this->resultsTable->appendClip(clip, false);
         }
         this->resultsTable->resizeRowsToContents();
 

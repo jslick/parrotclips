@@ -47,6 +47,9 @@ signals:
     void contextActionTriggered(QAction* action);
 
 public slots:
+    void prependClip(QSharedPointer<Clip> clip);
+    void appendClip(QSharedPointer<Clip> clip, bool size);
+
     void showContextMenu(const QPoint& pos);
 
 protected slots:

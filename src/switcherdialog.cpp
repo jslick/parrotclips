@@ -35,11 +35,7 @@ void SwitcherDialog::setSwitcher(QSharedPointer<Switcher> switcher)
     for (int i = clips.length() - 1; i >= 0; i--)
     {
         auto& clip = clips[i];
-        int rownum = this->clipsTable->rowCount();
-        this->clipsTable->insertRow(rownum);
-
-        ClipItem* clipItem = new ClipItem(clip);
-        this->clipsTable->setItem(rownum, Cols::TextPreviewCol, clipItem);
+        this->clipsTable->appendClip(clip, false);
     }
     this->clipsTable->resizeRowsToContents();
 
