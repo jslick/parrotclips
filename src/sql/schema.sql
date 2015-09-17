@@ -10,9 +10,15 @@ CREATE TABLE clips(
     id              INTEGER PRIMARY KEY NOT NULL,
     time            DATETIME,
     name            TEXT                NOT NULL,
-    owner_group_id  INTEGER,
-    sequence        INTEGER             NOT NULL,
-    FOREIGN KEY(owner_group_id) REFERENCES groups(id)
+    sequence        INTEGER             NOT NULL
+);
+
+CREATE TABLE clips_groups(
+    clip_id     INTEGER NOT NULL,
+    group_id    INTEGER NOT NULL,
+    FOREIGN KEY(clip_id) REFERENCES clips(id),
+    FOREIGN KEY(group_id) REFERENCES groups(id),
+    PRIMARY KEY(clip_id, group_id)
 );
 
 CREATE TABLE clip_data(

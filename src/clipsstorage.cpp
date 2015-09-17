@@ -39,8 +39,9 @@ QList<QSharedPointer<Clip>> ClipsStorage::getClips(int64_t groupId, ClipboardMan
     static const char SELECT_CLIPS[] =
             "SELECT clips.id, clips.time, clips.name, clips.sequence, cd.id AS clip_data_id, cd.mimetype, cd.text_contents "
             "FROM clips "
+            "INNER JOIN clips_groups cg ON cg.clip_id=clips.id "
             "INNER JOIN clip_data cd ON cd.clip_id=clips.id "
-            "WHERE clips.owner_group_id=? "
+            "WHERE cg.group_id=? "
             "  AND  cd.mimetype = 'text/plain'";
     sqlite3_stmt* stmt = 0;
     sqlite3_prepare_v2(this->db, SELECT_CLIPS, -1, &stmt, nullptr);
@@ -121,19 +122,28 @@ void ClipsStorage::saveClip(ClipsGroup* group, int position, QSharedPointer<Clip
         return;
 
     static const char INSERT_CLIP[] =
-            "INSERT INTO clips(name,owner_group_id,sequence) "
-            "VALUES(?,?,?)";
+            "INSERT INTO clips(name,sequence) "
+            "VALUES(?,?)";
 
     sqlite3_stmt* stmt = 0;
     sqlite3_prepare_v2(this->db, INSERT_CLIP, -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, clip->name.toStdString().c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 2, 1);   // TODO:  Get the actual owner group id
-    sqlite3_bind_int(stmt, 3, 0);
+    sqlite3_bind_int(stmt, 2, 0);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
     const sqlite3_int64 clip_id = sqlite3_last_insert_rowid(this->db);
     clip->setId(clip_id);
+
+    static const char INSERT_CLIP_GROUP[] =
+            "INSERT INTO clips_groups(clip_id,group_id) "
+            "VALUES(?,?)";
+    stmt = 0;
+    sqlite3_prepare_v2(this->db, INSERT_CLIP_GROUP, -1, &stmt, nullptr);
+    sqlite3_bind_int64(stmt, 1, clip_id);
+    sqlite3_bind_int64(stmt, 2, 1);  // TODO:  Get the actual owner group id
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 
     static const char INSERT_CLIP_DATA[] =
             "INSERT INTO clip_data(clip_id,mimetype,text_contents,binary_contents) "
@@ -183,12 +193,24 @@ void ClipsStorage::removeClip(const QSharedPointer<Clip>& clip)
         return;
     }
 
+    // TODO:  Handle many-to-many clips<->groups
+
     static const char REMOVE_CLIP_DATA[] =
             "DELETE FROM clip_data "
             "WHERE clip_id=?";
     sqlite3_stmt* stmt = 0;
     sqlite3_prepare_v2(this->db, REMOVE_CLIP_DATA, -1, &stmt, nullptr);
     sqlite3_bind_int64(stmt, 1, clip->clipId);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    static const char REMOVE_CLIP_GROUP[] =
+            "DELETE FROM clips_groups "
+            "WHERE clip_id=? AND group_id=?";
+    stmt = 0;
+    sqlite3_prepare_v2(this->db, REMOVE_CLIP_GROUP, -1, &stmt, nullptr);
+    sqlite3_bind_int64(stmt, 1, clip->clipId);
+    sqlite3_bind_int64(stmt, 2, 1); // TODO:  Use group ID
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
