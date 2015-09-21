@@ -7,6 +7,8 @@
 
 class ClipboardManager;
 
+bool isClipDataSame(const QMimeData& d1, const QMimeData& d2);
+
 class Clip : public QObject
 {
     Q_OBJECT
@@ -16,6 +18,10 @@ public:
     Q_DISABLE_COPY(Clip)
 
     QString getPreview() const;
+
+    void sync();
+
+    const QMimeData& getData() const;
 
 signals:
     void namedChanged(QString newName);

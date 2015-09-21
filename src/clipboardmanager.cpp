@@ -41,6 +41,14 @@ QList<QSharedPointer<Clip>> ClipboardManager::searchClips(const QString& text) c
 
 void ClipboardManager::pushMru(const QSharedPointer<Clip>& clip)
 {
+    if (this->mruClips.length())
+    {
+        const QSharedPointer<Clip>& recentClip = this->mruClips.back();
+        recentClip->sync();
+        if (isClipDataSame(clip->getData(), recentClip->getData()))
+            return;
+    }
+
     this->mruClips.enqueue(clip);
     emit mruPushed(clip);
 
