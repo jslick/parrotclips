@@ -55,16 +55,29 @@ void ClipboardManager::setClipboard(QSharedPointer<Clip>& clip)
 
 void ClipboardManager::pushMru(QSharedPointer<Clip> clip)
 {
+    // Check if this clip is the hint clip; if it is, re-use it
     if (this->mruHintClip && isClipDataSame(clip->clipboardData, this->mruHintClip->clipboardData))
         clip = this->mruHintClip;
     this->mruHintClip.clear();
 
+    // Don't queue duplicate clip
     if (this->mruClips.length())
     {
         const QSharedPointer<Clip>& recentClip = this->mruClips.back();
         recentClip->sync();
         if (isClipDataSame(clip->getData(), recentClip->getData()))
             return;
+    }
+
+    // Remove old MRU item (if it is queued)
+    for (int i = 0; i < this->mruClips.length(); i++)
+    {
+        if (this->mruClips.at(i) == clip)
+        {
+            this->mruClips.removeAt(i);
+            emit mruRemoved(clip);
+            break;
+        }
     }
 
     this->mruClips.enqueue(clip);
