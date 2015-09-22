@@ -1,5 +1,6 @@
 #include "clipstable.h"
 #include "clip.h"
+#include "clipboardmanager.h"
 
 #include <QHeaderView>
 #include <QMenu>
@@ -157,8 +158,7 @@ void ClipsTable::handleContextMenuAction(QAction* action)
     case ActivateAction:
         searchSelectedItems([](ClipItem* clipItem)
         {
-            Clip* clip = clipItem->clip.data();
-            clip->setClipboard();
+            clipItem->clip->manager.setClipboard(clipItem->clip);
             return false;
         });
 

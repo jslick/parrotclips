@@ -2,11 +2,8 @@
 #include "clipboardmanager.h"
 #include "clipsstorage.h"
 
-#include <QApplication>
-#include <QClipboard>
 #include <QUrl>
 
-static
 void copyMimeData(QMimeData& dest, const QMimeData& src)
 {
     if (src.hasUrls())
@@ -93,14 +90,4 @@ void Clip::setName(const QString& name)
 void Clip::setPreview(const QString& text)
 {
     this->preview = makeClipPreview(text);
-}
-
-void Clip::setClipboard()
-{
-    this->sync();
-
-    QClipboard* clipboard = QApplication::clipboard();
-    QMimeData* clipboardData = new QMimeData;
-    copyMimeData(*clipboardData, this->clipboardData);
-    clipboard->setMimeData(clipboardData);  // Takes ownership
 }

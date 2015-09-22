@@ -24,6 +24,8 @@ public:
 
     QList<QSharedPointer<Clip>> searchClips(const QString& text) const;
 
+    void setClipboard(QSharedPointer<Clip>& clip);
+
 signals:
     void mruPushed(QSharedPointer<Clip> clip);
     void mruRemoved(QSharedPointer<Clip> clip);
@@ -31,7 +33,7 @@ signals:
     void clipRemoved(ClipsGroup*,QSharedPointer<Clip>);
 
 public slots:
-    void pushMru(const QSharedPointer<Clip>& clip);
+    void pushMru(QSharedPointer<Clip> clip);
     void removeMruClip(const QSharedPointer<Clip>& clip);
 
 private:
@@ -39,6 +41,8 @@ private:
 
     QQueue<QSharedPointer<Clip>> mruClips;
     ClipsGroup rootGroup;
+
+    QSharedPointer<Clip> mruHintClip;
 };
 
 #endif // CLIPBOARDMANAGER_H

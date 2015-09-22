@@ -8,6 +8,7 @@
 class ClipboardManager;
 
 bool isClipDataSame(const QMimeData& d1, const QMimeData& d2);
+void copyMimeData(QMimeData& dest, const QMimeData& src);
 
 class Clip : public QObject
 {
@@ -32,8 +33,6 @@ public slots:
     void setName(const QString& name);
 
     void setPreview(const QString& text);
-
-    void setClipboard();
 
 public:
     ClipboardManager& manager;

@@ -1,6 +1,9 @@
 #include "clipboardmanager.h"
 #include "clipsstorage.h"
 
+#include <QClipboard>
+#include <QApplication>
+
 static const int MRU_LIMIT = 100;
 
 ClipboardManager::ClipboardManager(ClipsStorage& storage, QObject* parent)
@@ -39,8 +42,23 @@ QList<QSharedPointer<Clip>> ClipboardManager::searchClips(const QString& text) c
     return this->storage.searchClips(text, const_cast<ClipboardManager&>(*this));
 }
 
-void ClipboardManager::pushMru(const QSharedPointer<Clip>& clip)
+void ClipboardManager::setClipboard(QSharedPointer<Clip>& clip)
 {
+    clip->sync();
+    this->mruHintClip = clip;
+
+    QClipboard* clipboard = QApplication::clipboard();
+    QMimeData* clipboardData = new QMimeData;
+    copyMimeData(*clipboardData, clip->getData());
+    clipboard->setMimeData(clipboardData);  // Takes ownership
+}
+
+void ClipboardManager::pushMru(QSharedPointer<Clip> clip)
+{
+    if (this->mruHintClip && isClipDataSame(clip->clipboardData, this->mruHintClip->clipboardData))
+        clip = this->mruHintClip;
+    this->mruHintClip.clear();
+
     if (this->mruClips.length())
     {
         const QSharedPointer<Clip>& recentClip = this->mruClips.back();
