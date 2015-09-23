@@ -11,20 +11,7 @@ enum TableMenuAction : int
     ActivateAction = 1,
 };
 
-enum Cols : int
-{
-    NumberCol       = 0,
-    NameCol         = 1,
-    TextPreviewCol  = 2,
-};
-
-class ClipItem : public QTableWidgetItem
-{
-public:
-    ClipItem(QSharedPointer<Clip>& clip);
-
-    QSharedPointer<Clip> clip;
-};
+class ClipItem;
 
 
 class ClipsTable : public QTableWidget
@@ -55,13 +42,20 @@ public slots:
 protected slots:
     void handleContextMenuAction(QAction* action);
 
+    void rowsInserted(const QModelIndex& parent, int start, int end) override;
+    void rowsAboutToBeRemoved(const QModelIndex& parent, int start, int end) override;
+
 protected:
     void focusInEvent(QFocusEvent*);
+
+    void renumberRows(int from);
 
 private:
     static ClipsTable* currentContextTable;
 
     QMenu* menu = 0;
+
+    int renumberStart = -1;
 };
 
 #endif // CLIPSTABLE_H

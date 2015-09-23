@@ -69,11 +69,8 @@ ClipsWidget::ClipsWidget(ClipboardManager& clipboardManager, QWidget* parent) :
     connect(this->savedTable, &ClipsTable::contextActionTriggered, this, &ClipsWidget::handleContextMenuAction);
 
     // Data binding
-    connect(&this->clipboardManager, &ClipboardManager::mruPushed, this, &ClipsWidget::pushMru);
-    connect(&this->clipboardManager, &ClipboardManager::mruRemoved, [this](QSharedPointer<Clip> clip)
-    {
-        this->mruTable->removeClipFromTable(clip);
-    });
+    connect(&this->clipboardManager, &ClipboardManager::mruPushed, this->mruTable, &ClipsTable::prependClip);
+    connect(&this->clipboardManager, &ClipboardManager::mruRemoved, this->mruTable, &ClipsTable::removeClipFromTable);
     connect(&this->clipboardManager, &ClipboardManager::clipInserted, [this](ClipsGroup*,int,QSharedPointer<Clip> clip)
     {
         this->savedTable->prependClip(clip);
@@ -102,28 +99,6 @@ bool ClipsWidget::escapeRequested()
 void ClipsWidget::windowShown()
 {
     this->searchEdit->selectAll();
-}
-
-void ClipsWidget::pushMru(QSharedPointer<Clip> clip)
-{
-    this->mruTable->prependClip(clip);
-
-    for (int i = 0; i < this->mruTable->rowCount(); i++)
-    {
-        if (i < 10)
-        {
-            int num = i == 9 ? 0 : i+1;
-            QTableWidgetItem* item = new QTableWidgetItem(QString::number(num));
-            item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            this->mruTable->setItem(i, Cols::NumberCol, item);
-        }
-        else
-        {
-            QTableWidgetItem* item = this->mruTable->item(i, Cols::NumberCol);
-            if (item)
-                item->setText("");
-        }
-    }
 }
 
 void ClipsWidget::updateResults(const QString& text)

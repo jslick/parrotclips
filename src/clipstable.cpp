@@ -5,11 +5,26 @@
 #include <QHeaderView>
 #include <QMenu>
 #include <QKeyEvent>
+#include <QTimer>
 
-ClipItem::ClipItem(QSharedPointer<Clip>& clip)
+enum Cols : int
+{
+    NumberCol       = 0,
+    NameCol         = 1,
+    TextPreviewCol  = 2,
+};
+
+
+class ClipItem : public QTableWidgetItem
+{
+public:
+    ClipItem(QSharedPointer<Clip>& clip)
         : QTableWidgetItem(clip->getPreview(), Cols::TextPreviewCol),
           clip(clip)
-{}
+    {}
+
+    QSharedPointer<Clip> clip;
+};
 
 
 ClipsTable* ClipsTable::currentContextTable = nullptr;
@@ -168,8 +183,44 @@ void ClipsTable::handleContextMenuAction(QAction* action)
     emit contextActionTriggered(action);
 }
 
+void ClipsTable::rowsInserted(const QModelIndex& parent, int start, int end)
+{
+    QTableWidget::rowsInserted(parent, start, end);
+
+    this->renumberRows(start);
+}
+
+void ClipsTable::rowsAboutToBeRemoved(const QModelIndex& parent, int start, int end)
+{
+    QTableWidget::rowsAboutToBeRemoved(parent, start, end);
+
+    this->renumberRows(start);
+}
+
 void ClipsTable::focusInEvent(QFocusEvent*)
 {
     if (this->selectedIndexes().length() == 0 && this->rowCount())
         this->selectRow(0);
+}
+
+void ClipsTable::renumberRows(int from)
+{
+    // Group subsequent re-numbering together
+    if (this->renumberStart < 0)
+    {
+        this->renumberStart = from;
+        QTimer::singleShot(0, this, [this]()
+        {
+            for (int i = this->renumberStart; i < this->rowCount(); i++)
+            {
+                QTableWidgetItem* item = new QTableWidgetItem(QString::number(i + 1));
+                item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+                this->setItem(i, Cols::NumberCol, item);
+            }
+
+            this->renumberStart = -1;
+        });
+    }
+    else
+        this->renumberStart = std::min(this->renumberStart, from);
 }
