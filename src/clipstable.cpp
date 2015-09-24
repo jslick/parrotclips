@@ -83,38 +83,6 @@ ClipsTable::ClipsTable(QWidget* parent) :
     connect(this->menu, &QMenu::triggered, this, &ClipsTable::handleContextMenuAction);
 }
 
-void ClipsTable::resizeEvent(QResizeEvent* event)
-{
-    QTableWidget::resizeEvent(event);
-
-    this->setColumnWidth(Cols::NameCol, this->width() * 0.3);
-}
-
-void ClipsTable::keyPressEvent(QKeyEvent* event)
-{
-    if (event->key() == Qt::Key_Return)
-    {
-        this->searchSelectedItems([this](ClipItem* clipItem)
-        {
-            int y = this->rowViewportPosition(this->row(clipItem));
-            this->showContextMenu(QPoint(this->width(), y + 12));
-            this->menu->setActiveAction(this->menu->defaultAction());
-            return false;
-        });
-    }
-    else if (event->key() == Qt::Key_Home)
-    {
-        this->selectRow(0);
-    }
-    else if (event->key() == Qt::Key_End)
-    {
-        if (this->rowCount())
-            this->selectRow(this->rowCount() - 1);
-    }
-
-    return QTableWidget::keyPressEvent(event);
-}
-
 void ClipsTable::addContextMenuAction(QAction* action)
 {
     this->menu->addAction(action);
@@ -232,6 +200,38 @@ void ClipsTable::focusInEvent(QFocusEvent*)
 {
     if (this->selectedIndexes().length() == 0 && this->rowCount())
         this->selectRow(0);
+}
+
+void ClipsTable::resizeEvent(QResizeEvent* event)
+{
+    QTableWidget::resizeEvent(event);
+
+    this->setColumnWidth(Cols::NameCol, this->width() * 0.3);
+}
+
+void ClipsTable::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Return)
+    {
+        this->searchSelectedItems([this](ClipItem* clipItem)
+        {
+            int y = this->rowViewportPosition(this->row(clipItem));
+            this->showContextMenu(QPoint(this->width(), y + 12));
+            this->menu->setActiveAction(this->menu->defaultAction());
+            return false;
+        });
+    }
+    else if (event->key() == Qt::Key_Home)
+    {
+        this->selectRow(0);
+    }
+    else if (event->key() == Qt::Key_End)
+    {
+        if (this->rowCount())
+            this->selectRow(this->rowCount() - 1);
+    }
+
+    return QTableWidget::keyPressEvent(event);
 }
 
 void ClipsTable::renumberRows(int from)

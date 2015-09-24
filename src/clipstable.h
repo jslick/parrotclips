@@ -20,9 +20,6 @@ class ClipsTable : public QTableWidget
 public:
     explicit ClipsTable(QWidget* parent = 0);
 
-    void resizeEvent(QResizeEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
-
     void addContextMenuAction(QAction* action);
 
     void searchTableItems(std::function<bool(ClipItem*)> handler) const;
@@ -46,7 +43,9 @@ protected slots:
     void rowsAboutToBeRemoved(const QModelIndex& parent, int start, int end) override;
 
 protected:
-    void focusInEvent(QFocusEvent*);
+    void focusInEvent(QFocusEvent*) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
     void renumberRows(int from);
 
