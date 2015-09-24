@@ -102,6 +102,15 @@ void ClipsTable::keyPressEvent(QKeyEvent* event)
             return false;
         });
     }
+    else if (event->key() == Qt::Key_Home)
+    {
+        this->selectRow(0);
+    }
+    else if (event->key() == Qt::Key_End)
+    {
+        if (this->rowCount())
+            this->selectRow(this->rowCount() - 1);
+    }
 
     return QTableWidget::keyPressEvent(event);
 }
