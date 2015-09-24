@@ -27,6 +27,28 @@ public:
 };
 
 
+class ClipNameItem : public QObject, public QTableWidgetItem
+{
+    Q_OBJECT
+public:
+    ClipNameItem(QSharedPointer<Clip>& clip)
+        : QTableWidgetItem(clip->name, Cols::NameCol),
+          clip(clip)
+    {
+        connect(clip.data(), SIGNAL(namedChanged(QString)), SLOT(updateName(QString)));
+    }
+
+    QSharedPointer<Clip> clip;
+
+private slots:
+    void updateName(QString newName)
+    {
+        this->setText(newName);
+    }
+};
+#include "clipstable.moc"
+
+
 ClipsTable* ClipsTable::currentContextTable = nullptr;
 
 ClipsTable::ClipsTable(QWidget* parent) :
@@ -142,7 +164,7 @@ void ClipsTable::removeClipFromTable(QSharedPointer<Clip> clip)
 void ClipsTable::prependClip(QSharedPointer<Clip> clip)
 {
     this->insertRow(0);
-    this->setItem(0, Cols::NameCol, new QTableWidgetItem(clip->name));
+    this->setItem(0, Cols::NameCol, new ClipNameItem(clip));
     this->setItem(0, Cols::TextPreviewCol, new ClipItem(clip));
     this->resizeRowToContents(0);
 }
@@ -151,7 +173,7 @@ void ClipsTable::appendClip(QSharedPointer<Clip> clip, bool size)
 {
     int rownum = this->rowCount();
     this->insertRow(rownum);
-    this->setItem(rownum, Cols::NameCol, new QTableWidgetItem(clip->name));
+    this->setItem(rownum, Cols::NameCol, new ClipNameItem(clip));
     this->setItem(rownum, Cols::TextPreviewCol, new ClipItem(clip));
     if (size)
         this->resizeRowToContents(rownum);
