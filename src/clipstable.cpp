@@ -65,10 +65,13 @@ ClipsTable::ClipsTable(QWidget* parent) :
     this->setAlternatingRowColors(true);
 
 #ifdef Q_OS_LINUX
-    QFont tableFont = this->font();
-    tableFont.setPointSize(tableFont.pointSize() * 0.9);
-    this->setFont(tableFont);
+    const float fontMult = 0.9;
+#elif defined(Q_OS_WIN)
+    const float fontMult = 1;
 #endif
+    QFont tableFont = this->font();
+    tableFont.setPointSize(tableFont.pointSize() * fontMult);
+    this->setFont(tableFont);
 
     // Actions
     QAction* activateAction = new QAction(tr("Make &active clip"), this);
