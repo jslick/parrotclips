@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QScopedPointer>
+#include <QSystemTrayIcon>
 
 class ClipboardManager;
 class ClipsStorage;
@@ -32,6 +33,8 @@ private slots:
     void fetchClip();
 
     void maybeHide();
+
+    void handleTray(QSystemTrayIcon::ActivationReason reason);
 
 private:
     QScopedPointer<ClipsStorage> storage;

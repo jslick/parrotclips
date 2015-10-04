@@ -12,6 +12,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QStyle>
+#include <QMenu>
 #include <QClipboard>
 #include <QTimer>
 #include <QMessageBox>
@@ -90,6 +91,17 @@ MainWindow::MainWindow(QWidget* parent)
     hideAction->setShortcut(QKeySequence(Qt::Key_Escape));
     connect(hideAction, SIGNAL(triggered()), SLOT(maybeHide()));
     this->addAction(hideAction);
+
+    QMenu* trayMenu = new QMenu(this);
+    trayMenu->addAction(tr("Show"), this, SLOT(bringToFront()));
+    trayMenu->addSeparator();
+    trayMenu->addAction(tr("Exit"), this, SLOT(close()));
+    trayMenu->setDefaultAction(trayMenu->actions().first());
+    QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
+    trayIcon->setIcon(this->windowIcon());
+    trayIcon->setContextMenu(trayMenu);
+    connect(trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::handleTray);
+    trayIcon->show();
 }
 
 MainWindow::~MainWindow()
@@ -177,4 +189,20 @@ void MainWindow::maybeHide()
 {
     if (this->view->escapeRequested())
         this->hide();
+}
+
+void MainWindow::handleTray(QSystemTrayIcon::ActivationReason reason)
+{
+    switch (reason)
+    {
+    case QSystemTrayIcon::Trigger:
+        if (this->isActiveWindow())
+            this->hide();
+        else
+            this->bringToFront();
+        break;
+
+    default:
+        break;
+    }
 }
